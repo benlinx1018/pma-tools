@@ -1,0 +1,30 @@
+{
+    "targetFileName": "NV_D52 Master WBS_v0.20_20250702_Expect Rate.xlsx",
+    "targetSheetName": "MasterWBS",
+    "targetColumnName": "實際進度-回報",
+    "targetIdentifierColumnName": "工作項目 (公式)",
+    "sourceFiles": [
+        {
+            "fileName": "NV_D52 Master WBS_v0.20_20250702_Expect Rate-ODS.xlsx",
+            "criteria": [
+                {
+                    "headerName": "Track",
+                    "targetValues": [
+                        "ODS"
+                    ]
+                }
+            ]
+        },
+        {
+            "fileName": "NV_D52 Master WBS_v0.20_20250702_Expect Rate_NFR.xlsx",
+            "criteria": [
+                {
+                    "headerName": "SDLC",
+                    "targetValues": [
+                        "NFR"
+                    ]
+                }
+            ]
+        }
+    ]
+}
