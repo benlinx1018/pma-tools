@@ -1,4 +1,5 @@
-// index.ts
+#!/usr/bin/env node
+
 import { input } from "@inquirer/prompts";
 import ExcelJS from "exceljs";
 import * as fs from "fs";

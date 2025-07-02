@@ -2,21 +2,32 @@
   "name": "pma-tools",
   "version": "1.0.0",
   "description": "",
+  "keywords": [],
+  "homepage": "https://github.com/benlinx1018/pma-tools#readme",
+  "bugs": {
+    "url": "https://github.com/benlinx1018/pma-tools/issues"
+  },
+  "bin": {
+    "pma-tools": "./dist/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/benlinx1018/pma-tools.git"
+  },
+  "license": "ISC",
+  "author": "ben lin",
+  "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "type": "module",
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "@types/node": "^24.0.7",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "build": "tsc"
   },
   "dependencies": {
     "@inquirer/prompts": "^7.5.3",
     "exceljs": "^4.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.7",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
   }
 }
