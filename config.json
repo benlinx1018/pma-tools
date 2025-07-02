@@ -1,27 +1,54 @@
 {
-    "targetFileName": "NV_D52 Master WBS_v0.20_20250702_Expect Rate.xlsx",
+    "targetFileName": "NV_D52 Master WBS_v0.20_20250702_Expect Rate計算版 (整併差DMSIT).xlsx",
     "targetSheetName": "MasterWBS",
     "targetColumnName": "實際進度-回報",
     "targetIdentifierColumnName": "工作項目 (公式)",
+    "highlightColor": "FFFFFF00",
     "sourceFiles": [
         {
-            "fileName": "NV_D52 Master WBS_v0.20_20250702_Expect Rate-ODS.xlsx",
+            "fileName": "NV_D52 Master WBS_v0.20_20250702_Expect Rate (EC).xlsx",
             "criteria": [
                 {
                     "headerName": "Track",
                     "targetValues": [
-                        "ODS"
+                        "EC"
                     ]
                 }
             ]
         },
         {
-            "fileName": "NV_D52 Master WBS_v0.20_20250702_Expect Rate_NFR.xlsx",
+            "fileName": "NV_D52 Master WBS_v0.20_20250702_Expect Rate_FEP.xlsx",
+            "criteria": [
+                {
+                    "headerName": "Track",
+                    "targetValues": [
+                        "測試案例-FEP",
+                        "環境準備-FEP",
+                        "測試執行-FEP",
+                        "測試準備-FEP"
+                    ]
+                }
+            ]
+        },
+        {
+            "fileName": "NV_D52 Master WBS_v0.20_20250702_Expect Rate_Jimmy.xlsx",
             "criteria": [
                 {
                     "headerName": "SDLC",
                     "targetValues": [
-                        "NFR"
+                        "Perfomance Testing"
+                    ]
+                }
+            ]
+        },
+        {
+            "fileName": "NV_D52 Master WBS_v0.20_20250702_需求及UAT.xlsx",
+            "criteria": [
+                {
+                    "headerName": "SDLC",
+                    "targetValues": [
+                        "需求",
+                        "UAT"
                     ]
                 }
             ]
