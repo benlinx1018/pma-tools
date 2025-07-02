@@ -1,7 +1,7 @@
 {
     "targetFileName": "NV_D52 Master WBS_v0.20_20250702_Expect Rate計算版 (整併差DMSIT).xlsx",
     "targetSheetName": "MasterWBS",
-    "targetColumnName": "實際進度-回報",
+    "targetUpdateColumnName": "實際進度-回報",
     "targetIdentifierColumnName": "工作項目 (公式)",
     "highlightColor": "FFFFFF00",
     "sourceFiles": [

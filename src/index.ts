@@ -7,11 +7,6 @@ import * as fs from "fs";
 async function main() {
   let config = await loadConfig();
 
-  config.targetFileName = await readFileName(
-    `請輸入 Excel 檔案的路徑（例如 ${config.targetFileName}）`,
-    config.targetFileName
-  );
-
   const targetWb = new ExcelJS.Workbook();
   await targetWb.xlsx.readFile(config.targetFileName);
   const targetSheet = targetWb.getWorksheet(config.targetSheetName);
@@ -22,27 +17,30 @@ async function main() {
     );
     process.exit(1);
   }
-  const headerRow2 = targetSheet.getRow(2);
+  const targetHeaderRow = targetSheet.getRow(2);
 
-  const targetColHeaderMap = new Map<string, number>();
-  headerRow2.eachCell((cell, colNumber) => {
-    if (cell.value) {
-      targetColHeaderMap.set(cell.value.toString(), colNumber);
+  const targetHeaderColIdMap = new Map<string, number>();
+  targetHeaderRow.eachCell((cell, colNumber) => {
+    const cellVal = getCellVal(cell);
+    if (cellVal) {
+      targetHeaderColIdMap.set(cellVal, colNumber);
     }
   });
 
-  const targetIdColIndex = targetColHeaderMap.get(
+  const targetIdColIndex = targetHeaderColIdMap.get(
     config.targetIdentifierColumnName
   );
 
   console.log(
     `目標識別欄位名稱:${config.targetIdentifierColumnName} ,索引位置:${targetIdColIndex}`
   );
-  const updateColIdx = targetColHeaderMap.get(config.targetColumnName);
-  console.log(
-    `目標更新欄位名稱:${config.targetColumnName} ,索引位置:${updateColIdx}`
+  const targetUpdateColIndex = targetHeaderColIdMap.get(
+    config.targetUpdateColumnName
   );
-  if (!targetIdColIndex || !updateColIdx) {
+  console.log(
+    `目標更新欄位名稱:${config.targetUpdateColumnName} ,索引位置:${targetUpdateColIndex}`
+  );
+  if (!targetIdColIndex || !targetUpdateColIndex) {
     throw new Error("目標欄位設定異常，請檢查 config.json");
   }
 
@@ -52,13 +50,18 @@ async function main() {
     await srcWb.xlsx.readFile(source.fileName);
     const srcSheet = srcWb.worksheets[0];
     const srcHeaderRow = srcSheet.getRow(2);
-    const srcColMap = new Map<string, number>();
+    const srcHeaderColIdMap = new Map<string, number>();
     srcHeaderRow.eachCell((cell, colNumber) => {
-      if (cell.value) srcColMap.set(cell.value.toString(), colNumber);
+      const cellVal = getCellVal(cell);
+      if (cellVal) {
+        srcHeaderColIdMap.set(cellVal, colNumber);
+      }
     });
 
-    const srcIdColIdx = srcColMap.get(config.targetIdentifierColumnName);
-    const srcValColIdx = srcColMap.get(config.targetColumnName);
+    const srcIdColIdx = srcHeaderColIdMap.get(
+      config.targetIdentifierColumnName
+    );
+    const srcValColIdx = srcHeaderColIdMap.get(config.targetUpdateColumnName);
     if (!srcIdColIdx || !srcValColIdx) {
       // console.log(
       //   `❌ srcIdColIdx 或 srcValColIdx 未找到，跳過來源檔案「${source.fileName}」`
@@ -68,10 +71,26 @@ async function main() {
 
     const sourceIdMap = new Map<string, ExcelJS.CellValue>();
     for (let r = 3; r <= srcSheet.actualRowCount; r++) {
-      const row = srcSheet.getRow(r);
-      const key = getCellText(row.getCell(srcIdColIdx));
+      const srcRow = srcSheet.getRow(r);
+
+      const matched = source.criteria.every((c) => {
+        const srcColHeaderIndex = srcHeaderColIdMap.get(c.headerName);
+        if (!srcColHeaderIndex) return false;
+        const value = getCellVal(srcRow.getCell(srcColHeaderIndex));
+
+        return c.targetValues.includes(value);
+      });
+
+      if (!matched) {
+        // console.log(
+        //   `❌ 第${rowNum}筆資料不符合來源檔案「${source.fileName}」的條件，跳過`
+        // );
+        continue;
+      }
+
+      const key = getCellVal(srcRow.getCell(srcIdColIdx));
       if (key) {
-        const rolColValue = row.getCell(srcValColIdx).value;
+        const rolColValue = getCellVal(srcRow.getCell(srcValColIdx));
         sourceIdMap.set(key, rolColValue);
       }
     }
@@ -81,7 +100,7 @@ async function main() {
   for (let rowNum = 3; rowNum <= targetSheet.actualRowCount; rowNum++) {
     // console.log(`開始檢查第${rowNum}筆資料...`);
     const targetRow = targetSheet.getRow(rowNum);
-    const targetIdColValue = getCellText(targetRow.getCell(targetIdColIndex));
+    const targetIdColValue = getCellVal(targetRow.getCell(targetIdColIndex));
 
     if (targetIdColValue == "[object Object]") {
       console.log(
@@ -98,13 +117,13 @@ async function main() {
     for (const source of config.sourceFiles) {
       // 檢查 criteria 是否符合
       const matched = source.criteria.every((c) => {
-        const targetColHeaderIndex = targetColHeaderMap.get(c.headerName);
-        if (!targetColHeaderIndex) return false;
-        const value = targetRow
-          .getCell(targetColHeaderIndex)
-          .value?.toString()
-          .trim();
-        return c.targetValues.includes(value || "");
+        const targetColHeaderIndex = targetHeaderColIdMap.get(c.headerName);
+        if (!targetColHeaderIndex) {
+          return false;
+        }
+        const value = getCellVal(targetRow.getCell(targetColHeaderIndex));
+
+        return c.targetValues.includes(value);
       });
 
       if (!matched) {
@@ -119,9 +138,10 @@ async function main() {
         const srcRowVal = sourceCache.get(targetIdColValue);
         if (srcRowVal) {
           const updateVal = srcRowVal;
-          const targetCell = targetRow.getCell(updateColIdx);
+          const targetCell = targetRow.getCell(targetUpdateColIndex);
+          const targetCellValue = getCellVal(targetCell);
 
-          if (targetCell.value != updateVal) {
+          if (targetCellValue != updateVal) {
             targetCell.value = updateVal;
             safelySetCellFill(targetCell, config.highlightColor);
             console.log(
@@ -150,10 +170,10 @@ interface SourceFile {
 }
 
 interface Config {
+  highlightColor: string;
   targetFileName: string;
   targetSheetName: string;
-  targetColumnName: string;
-  highlightColor: string;
+  targetUpdateColumnName: string;
   targetIdentifierColumnName: string;
   sourceFiles: SourceFile[];
 }
@@ -192,7 +212,7 @@ async function loadConfig(): Promise<Config> {
   return config;
 }
 
-function getCellText(cell: ExcelJS.Cell): string {
+function getCellVal(cell: ExcelJS.Cell): string {
   const val = cell?.value;
 
   if (val === null || val === undefined) return "";
