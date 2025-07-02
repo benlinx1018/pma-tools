@@ -3,14 +3,14 @@
 import { input } from "@inquirer/prompts";
 import ExcelJS from "exceljs";
 import * as fs from "fs";
-import path from "path";
 
 async function main() {
-  const configPath = path.resolve("./config.json");
+  let config = await loadConfig();
 
-  let config = loadConfig(configPath);
-
-  config.targetFileName = await readFileName(config.targetFileName);
+  config.targetFileName = await readFileName(
+    `請輸入 Excel 檔案的路徑（例如 ${config.targetFileName}）`,
+    config.targetFileName
+  );
 
   const targetWb = new ExcelJS.Workbook();
   await targetWb.xlsx.readFile(config.targetFileName);
@@ -161,10 +161,13 @@ interface Config {
   sourceFiles: SourceFile[];
 }
 
-async function readFileName(defaultPath: string): Promise<string> {
+async function readFileName(
+  message: string,
+  defaultPath: string
+): Promise<string> {
   while (true) {
     const targetFileName = await input({
-      message: `請輸入 Excel 檔案的路徑（例如 ${defaultPath}）`,
+      message: message,
       default: defaultPath,
     });
 
@@ -176,20 +179,26 @@ async function readFileName(defaultPath: string): Promise<string> {
   }
 }
 
-function loadConfig(configPath: string): Config {
+async function loadConfig(): Promise<Config> {
   let config: Config = {
-    targetFileName: "target.xlsx",
+    targetFileName: "./target.xlsx",
     targetSheetName: "Sheet1",
     targetColumnName: "A",
     targetIdentifierColumnName: "B",
     sourceFiles: [],
   };
 
+  let configPath = "./config.json";
+
   if (!fs.existsSync(configPath)) {
-    console.warn(`⚠️ config file not found: ${configPath}`);
-  } else {
-    config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+    console.warn(`⚠️ : ${configPath}`);
+    configPath = await readFileName(
+      `⚠️預設設定檔(${config})載入失敗，請輸入 config.json 的路徑`,
+      configPath
+    );
   }
+
+  config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
 
   return config;
 }
