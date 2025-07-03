@@ -97,6 +97,8 @@ async function main() {
     sourceMap.set(source.fileName, sourceIdMap);
   }
 
+  let updatedCount = 0;
+
   for (let rowNum = 3; rowNum <= targetSheet.actualRowCount; rowNum++) {
     // console.log(`開始檢查第${rowNum}筆資料...`);
     const targetRow = targetSheet.getRow(rowNum);
@@ -110,7 +112,7 @@ async function main() {
     }
 
     if (!targetIdColValue) {
-      console.log(`❌ 目標識別欄位值為空，跳過第${rowNum}筆資料`);
+      console.log(`⚠️ 目標識別欄位值為空，跳過第${rowNum}筆資料`);
       continue;
     }
 
@@ -145,8 +147,11 @@ async function main() {
             targetCell.value = updateVal;
             safelySetCellFill(targetCell, config.highlightColor);
             console.log(
-              `✅ 更新第${rowNum}筆資料${config.targetIdentifierColumnName}:${targetIdColValue} ${config.targetColumnName} = ${updateVal} (source: ${source.fileName})`
+              `✅ 更新第${rowNum}筆資料 [${config.targetIdentifierColumnName}]=[${targetIdColValue}] [${config.targetUpdateColumnName}]=${updateVal} (來源檔案: ${source.fileName})`
             );
+
+            updatedCount++;
+            break;
           }
         }
       }
@@ -154,7 +159,8 @@ async function main() {
   }
 
   await targetWb.xlsx.writeFile(config.targetFileName);
-  console.log("📄 寫入完成：" + config.targetFileName);
+  console.log(`📝 總共更新 ${updatedCount} 筆資料`);
+  console.log("🗂️ 寫入完成：" + config.targetFileName);
 }
 
 main().catch(console.error);
