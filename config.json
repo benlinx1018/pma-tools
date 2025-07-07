@@ -1,5 +1,5 @@
 {
-    "targetFileName": "NV_D52 Master WBS_v0.20_20250702_Expect Rate計算版 (整併差DMSIT).xlsx",
+    "targetFileName": "nv_d52_master_wbs_v0.20_20250702_expect_rate.xlsx",
     "targetSheetName": "MasterWBS",
     "targetUpdateColumnName": "實際進度-回報",
     "targetIdentifierColumnName": "工作項目 (公式)",
@@ -12,6 +12,17 @@
                     "headerName": "Track",
                     "targetValues": [
                         "EC"
+                    ]
+                }
+            ]
+        },
+        {
+            "fileName": "NV_D52 Master WBS_v0.20_20250702_Expect Rate_DM.xlsx",
+            "criteria": [
+                {
+                    "headerName": "SDLC",
+                    "targetValues": [
+                        "DM"
                     ]
                 }
             ]
@@ -31,12 +42,80 @@
             ]
         },
         {
-            "fileName": "NV_D52 Master WBS_v0.20_20250702_Expect Rate_Jimmy.xlsx",
+            "fileName": "NV_D52 Master WBS_v0.20_20250702_Expect Rate_NFR.xlsx",
+            "criteria": [
+                {
+                    "headerName": "SDLC",
+                    "targetValues": [
+                        "NFR"
+                    ]
+                }
+            ]
+        },
+        {
+            "fileName": "NV_D52 Master WBS_v0.20_20250702_Expect Rate_PT.xlsx",
             "criteria": [
                 {
                     "headerName": "SDLC",
                     "targetValues": [
                         "Perfomance Testing"
+                    ]
+                }
+            ]
+        },
+        {
+            "fileName": "NV_D52 Master WBS_v0.20_20250702_Expect Rate_自行開發.xlsx",
+            "criteria": [
+                {
+                    "headerName": "SDLC",
+                    "targetValues": [
+                        "DEV/UT",
+                        "Dev/UT",
+                        "SA",
+                        "SD"
+                    ]
+                },
+                {
+                    "headerName": "Track",
+                    "targetValues": [
+                        "自行開發"
+                    ]
+                }
+            ]
+        },
+        {
+            "fileName": "NV_D52 Master WBS_v0.20_20250702_Expect Rate-ODS.xlsx",
+            "criteria": [
+                {
+                    "headerName": "Track",
+                    "targetValues": [
+                        "ODS"
+                    ]
+                }
+            ]
+        },
+        {
+            "fileName": "NV_D52 Master WBS_v0.20_20250702_Expect Rate_舊主機.xlsx",
+            "criteria": [
+                {
+                    "headerName": "Track",
+                    "targetValues": [
+                        "舊主機"
+                    ]
+                }
+            ]
+        },
+        {
+            "fileName": "NV_D52 Master WBS_v0.20_20250702_Expect Rate-IM.xlsx",
+            "criteria": [
+                {
+                    "headerName": "Track",
+                    "targetValues": [
+                        "IM",
+                        "測試案例-IM",
+                        "測試資料-IM",
+                        "測試執行-IM",
+                        "環境準備-IM"
                     ]
                 }
             ]
@@ -49,6 +128,17 @@
                     "targetValues": [
                         "需求",
                         "UAT"
+                    ]
+                }
+            ]
+        },
+        {
+            "fileName": "NV_D52 Master WBS_20250630_中台.xlsx",
+            "criteria": [
+                {
+                    "headerName": "Track",
+                    "targetValues": [
+                        "中台"
                     ]
                 }
             ]

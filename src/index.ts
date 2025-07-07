@@ -7,6 +7,14 @@ import * as fs from "fs";
 async function main() {
   let config = await loadConfig();
 
+  const sourceMap = new Map<string, Map<string, ExcelJS.CellValue>>();
+  for (const source of config.sourceFiles) {
+    await processSourceSheet(source, config, sourceMap);
+    if (global.gc) global.gc();
+  }
+
+  let updatedCount = 0;
+
   const targetWb = new ExcelJS.Workbook();
   await targetWb.xlsx.readFile(config.targetFileName);
   const targetSheet = targetWb.getWorksheet(config.targetSheetName);
@@ -23,13 +31,14 @@ async function main() {
   targetHeaderRow.eachCell((cell, colNumber) => {
     const cellVal = getCellVal(cell);
     if (cellVal) {
-      targetHeaderColIdMap.set(cellVal, colNumber);
+      targetHeaderColIdMap.set(JSON.parse(JSON.stringify(cellVal)), colNumber);
     }
   });
 
   const targetIdColIndex = targetHeaderColIdMap.get(
     config.targetIdentifierColumnName
   );
+  const targetIdColIndexEx = targetHeaderColIdMap.get("預計開始時間")!;
 
   console.log(
     `目標識別欄位名稱:${config.targetIdentifierColumnName} ,索引位置:${targetIdColIndex}`
@@ -44,65 +53,11 @@ async function main() {
     throw new Error("目標欄位設定異常，請檢查 config.json");
   }
 
-  const sourceMap = new Map<string, Map<string, ExcelJS.CellValue>>();
-  for (const source of config.sourceFiles) {
-    const srcWb = new ExcelJS.Workbook();
-    await srcWb.xlsx.readFile(source.fileName);
-    const srcSheet = srcWb.worksheets[0];
-    const srcHeaderRow = srcSheet.getRow(2);
-    const srcHeaderColIdMap = new Map<string, number>();
-    srcHeaderRow.eachCell((cell, colNumber) => {
-      const cellVal = getCellVal(cell);
-      if (cellVal) {
-        srcHeaderColIdMap.set(cellVal, colNumber);
-      }
-    });
-
-    const srcIdColIdx = srcHeaderColIdMap.get(
-      config.targetIdentifierColumnName
-    );
-    const srcValColIdx = srcHeaderColIdMap.get(config.targetUpdateColumnName);
-    if (!srcIdColIdx || !srcValColIdx) {
-      // console.log(
-      //   `❌ srcIdColIdx 或 srcValColIdx 未找到，跳過來源檔案「${source.fileName}」`
-      // );
-      continue;
-    }
-
-    const sourceIdMap = new Map<string, ExcelJS.CellValue>();
-    for (let r = 3; r <= srcSheet.actualRowCount; r++) {
-      const srcRow = srcSheet.getRow(r);
-
-      const matched = source.criteria.every((c) => {
-        const srcColHeaderIndex = srcHeaderColIdMap.get(c.headerName);
-        if (!srcColHeaderIndex) return false;
-        const value = getCellVal(srcRow.getCell(srcColHeaderIndex));
-
-        return c.targetValues.includes(value);
-      });
-
-      if (!matched) {
-        // console.log(
-        //   `❌ 第${rowNum}筆資料不符合來源檔案「${source.fileName}」的條件，跳過`
-        // );
-        continue;
-      }
-
-      const key = getCellVal(srcRow.getCell(srcIdColIdx));
-      if (key) {
-        const rolColValue = getCellVal(srcRow.getCell(srcValColIdx));
-        sourceIdMap.set(key, rolColValue);
-      }
-    }
-    sourceMap.set(source.fileName, sourceIdMap);
-  }
-
-  let updatedCount = 0;
-
   for (let rowNum = 3; rowNum <= targetSheet.actualRowCount; rowNum++) {
     // console.log(`開始檢查第${rowNum}筆資料...`);
     const targetRow = targetSheet.getRow(rowNum);
     const targetIdColValue = getCellVal(targetRow.getCell(targetIdColIndex));
+    const targetExKey = getCellVal(targetRow.getCell(targetIdColIndexEx));
 
     if (targetIdColValue == "[object Object]") {
       console.log(
@@ -137,7 +92,7 @@ async function main() {
 
       const sourceCache = sourceMap.get(source.fileName);
       if (sourceCache) {
-        const srcRowVal = sourceCache.get(targetIdColValue);
+        const srcRowVal = sourceCache.get(targetExKey + targetIdColValue);
         if (srcRowVal) {
           const updateVal = srcRowVal;
           const targetCell = targetRow.getCell(targetUpdateColIndex);
@@ -145,9 +100,12 @@ async function main() {
 
           if (targetCellValue != updateVal) {
             targetCell.value = updateVal;
+
+            targetCell.numFmt = "0.00%";
+            targetRow.getCell(targetUpdateColIndex + 3).value = source.fileName; // 更新下一欄的值
             safelySetCellFill(targetCell, config.highlightColor);
             console.log(
-              `✅ 更新第${rowNum}筆資料 [${config.targetIdentifierColumnName}]=[${targetIdColValue}] [${config.targetUpdateColumnName}]=${updateVal} (來源檔案: ${source.fileName})`
+              `✅ 更新第${rowNum}筆資料 [${config.targetIdentifierColumnName}]=[${targetIdColValue}] [${config.targetUpdateColumnName}]= ${targetCellValue}->${updateVal} (來源檔案: ${source.fileName})`
             );
 
             updatedCount++;
@@ -158,12 +116,82 @@ async function main() {
     }
   }
 
-  await targetWb.xlsx.writeFile(config.targetFileName);
+  const fileName = `${config.targetFileName.replace(
+    /\.xlsx$/i,
+    ""
+  )}_${getCurrentDateTimeString()}.xlsx`;
+
+  await targetWb.xlsx.writeFile(fileName);
   console.log(`📝 總共更新 ${updatedCount} 筆資料`);
-  console.log("🗂️ 寫入完成：" + config.targetFileName);
+  console.log("🗂️ 寫入完成：" + fileName);
 }
 
 main().catch(console.error);
+
+async function processSourceSheet(
+  source: SourceFile,
+  config: Config,
+  sourceMap: Map<string, Map<string, any>>
+) {
+  const srcWb = new ExcelJS.Workbook();
+  console.log("📝 讀取：" + source.fileName);
+  await srcWb.xlsx.readFile(source.fileName);
+  const srcSheet = srcWb.worksheets[0];
+  const srcHeaderRow = srcSheet.getRow(2);
+  const srcHeaderColIdMap = new Map<string, number>();
+  srcHeaderRow.eachCell((cell, colNumber) => {
+    const cellVal = getCellVal(cell);
+    if (cellVal) {
+      srcHeaderColIdMap.set(cellVal, colNumber);
+    }
+  });
+
+  const srcIdColIndex = srcHeaderColIdMap.get(
+    config.targetIdentifierColumnName
+  );
+  const srcIdColIndexExt = srcHeaderColIdMap.get("預計開始時間");
+  const srcValColIdx = srcHeaderColIdMap.get(config.targetUpdateColumnName);
+  if (!srcIdColIndex || !srcValColIdx || !srcIdColIndexExt) {
+    // console.log(
+    //   `❌ srcIdColIdx 或 srcValColIdx 未找到，跳過來源檔案「${source.fileName}」`
+    // );
+    return;
+  }
+
+  const sourceIdMap = new Map<string, any>();
+  for (let r = 3; r <= srcSheet.actualRowCount; r++) {
+    const srcRow = srcSheet.getRow(r);
+
+    const matched = source.criteria.every((c) => {
+      const srcColHeaderIndex = srcHeaderColIdMap.get(c.headerName);
+      if (!srcColHeaderIndex) {
+        return false;
+      }
+      const value = getCellVal(srcRow.getCell(srcColHeaderIndex));
+
+      return c.targetValues.includes(value);
+    });
+
+    if (!matched) {
+      // console.log(
+      //   `❌ 第${rowNum}筆資料不符合來源檔案「${source.fileName}」的條件，跳過`
+      // );
+      continue;
+    }
+
+    const key = getCellVal(srcRow.getCell(srcIdColIndex));
+    const exKey = getCellVal(srcRow.getCell(srcIdColIndexExt));
+    if (exKey + key) {
+      const rolColValue = getCellVal(srcRow.getCell(srcValColIdx));
+
+      sourceIdMap.set(exKey + key, JSON.parse(JSON.stringify(rolColValue)));
+    }
+  }
+  console.log(
+    `📊已載入來源檔案「${source.fileName}」的資料，共 ${sourceIdMap.size} 筆`
+  );
+  sourceMap.set(source.fileName, sourceIdMap);
+}
 
 interface Criteria {
   headerName: string;
@@ -218,16 +246,18 @@ async function loadConfig(): Promise<Config> {
   return config;
 }
 
-function getCellVal(cell: ExcelJS.Cell): string {
+function getCellVal(cell: ExcelJS.Cell): any {
   const val = cell?.value;
 
-  if (val === null || val === undefined) return "";
-
-  if (typeof val === "object" && "result" in val) {
-    return val.result?.toString?.() ?? ""; // 如果公式有 result 就用它
+  if (val === null || val === undefined) {
+    return val;
   }
 
-  return val.toString?.() ?? "";
+  if (typeof val === "object" && "result" in val) {
+    return val.result; // 如果公式有 result 就用它
+  }
+
+  return val;
 }
 
 function safelySetCellFill(cell: ExcelJS.Cell, highlightColor: string) {
@@ -242,4 +272,17 @@ function safelySetCellFill(cell: ExcelJS.Cell, highlightColor: string) {
       fgColor: { argb: highlightColor },
     },
   };
+}
+
+function getCurrentDateTimeString(): string {
+  const now = new Date();
+
+  const yyyy = now.getFullYear();
+  const MM = String(now.getMonth() + 1).padStart(2, "0"); // 月份是從 0 開始
+  const dd = String(now.getDate()).padStart(2, "0");
+  const HH = String(now.getHours()).padStart(2, "0");
+  const mm = String(now.getMinutes()).padStart(2, "0");
+  const ss = String(now.getSeconds()).padStart(2, "0");
+
+  return `${yyyy}${MM}${dd}${HH}${mm}${ss}`;
 }
