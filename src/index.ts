@@ -7,7 +7,7 @@ import * as fs from "fs";
 async function main() {
   let config = await loadConfig();
 
-  const sourceMap = new Map<string, Map<string, ExcelJS.CellValue>>();
+  const sourceMap = new Map<string, Map<string, string>>();
   for (const source of config.sourceFiles) {
     await processSourceSheet(source, config, sourceMap);
     if (global.gc) global.gc();
@@ -131,7 +131,7 @@ main().catch(console.error);
 async function processSourceSheet(
   source: SourceFile,
   config: Config,
-  sourceMap: Map<string, Map<string, any>>
+  sourceMap: Map<string, Map<string, string>>
 ) {
   const srcWb = new ExcelJS.Workbook();
   console.log("📝 讀取：" + source.fileName);

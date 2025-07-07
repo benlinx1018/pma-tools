@@ -142,6 +142,17 @@
                     ]
                 }
             ]
+        },
+        {
+            "fileName": "NV_D52 Master WBS_20250630_SIT.xlsx",
+            "criteria": [
+                {
+                    "headerName": "SDLC",
+                    "targetValues": [
+                        "SIT"
+                    ]
+                }
+            ]
         }
     ]
 }
